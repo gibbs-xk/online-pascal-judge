@@ -1,4 +1,4 @@
-FROM python:3.9.0rc1-slim-buster
+FROM python:3.14.3-slim
 
 WORKDIR /interpreter
 

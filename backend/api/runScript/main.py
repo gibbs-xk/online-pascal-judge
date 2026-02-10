@@ -1,26 +1,48 @@
-from flask import Blueprint, request, Response, jsonify
-from ..Utils import runCommandCMD
+import subprocess
+import sys
 from pathlib import Path
 
-run = Blueprint('run', __name__)
-langDir = Path('langs').absolute()
+from flask import Blueprint, request, jsonify
 
-@run.route('/', methods=["POST", "GET"])
-def execute():
-    incomingData = request.get_json()
-    print(incomingData)
-    lang = incomingData['language']
-    inputFile = incomingData['script'] 
-    # command = 'python ' + lang + '.py ' + inputFile
-    sudoPass = 'mridmehu' #host sudo pass
-    commandDocker = 'sudo docker run --rm pascal:python_slim python ' + 'interpreter' + '.py ' + inputFile
-    print("=="*50)
-    print(commandDocker)
-    print (str(langDir/lang))
-    print("==" * 50)
+run = Blueprint('run', __name__)
+root_dir = Path(__file__).resolve().parents[2]
+interpreter_path = root_dir / "pascal.py"
+
+@run.route('/languages', methods=["GET"])
+def languages():
+    return jsonify(["pascal"])
+
+
+def _run_script(script_text):
+    if not interpreter_path.exists():
+        return {"stdout": "", "stderr": "Interpreter not found.", "returncode": 1}
+
     try:
-        output = runCommandCMD(directory=langDir/lang, command=commandDocker, timeout=100, sudoPass=sudoPass)
-    except:
-        return ("yoooooo!")
-    outputDict = {'stdout': output[0], 'stderr': output[1]}
-    return jsonify(outputDict)
+        result = subprocess.run(
+            [sys.executable, str(interpreter_path), script_text],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except subprocess.TimeoutExpired:
+        return {"stdout": "", "stderr": "Execution timed out.", "returncode": 124}
+
+    return {
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "returncode": result.returncode,
+    }
+
+
+@run.route('/code_run', methods=["POST"])
+def code_run():
+    incoming_data = request.get_json(silent=True) or {}
+    script_text = incoming_data.get("script", "")
+    return jsonify(_run_script(script_text))
+
+
+@run.route('/', methods=["POST"])
+def execute():
+    incoming_data = request.get_json(silent=True) or {}
+    script_text = incoming_data.get("script", "")
+    return jsonify(_run_script(script_text))

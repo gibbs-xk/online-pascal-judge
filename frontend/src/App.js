@@ -9,7 +9,7 @@ const Output = ({obj}) => {
     return (
       <div>
         <br></br>
-        <textarea style={{backgroundColor: "lightgreen"}} rows="20" value = {obj.stdout} />
+        <textarea style={{backgroundColor: "lightgreen"}} rows="20" value={obj.stdout} readOnly />
       </div>
       )
   } else {
@@ -17,7 +17,7 @@ const Output = ({obj}) => {
     return (
       <div>
         <br></br>
-        <textarea style={{backgroundColor: "#ff8080"}} rows="20" value = {obj.stderr} />
+        <textarea style={{backgroundColor: "#ff8080"}} rows="20" value={obj.stderr} readOnly />
       </div>
       )
   }
